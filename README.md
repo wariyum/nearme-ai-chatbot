@@ -1,7 +1,8 @@
 
-# Chatbot Widget
+````markdown
+# Angular Chatbot Widget
 
-This is an **Angular-based Chatbot Widget** that can be embedded in any Nearme-E-Commerce Platform, using Microfront end pattern.
+This is an **Angular-based Chatbot Widget** that can be embedded in any website.  
 The widget is built as a standalone component using **Angular Elements** so it can be reused across multiple projects.
 
 ---

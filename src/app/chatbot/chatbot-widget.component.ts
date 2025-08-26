@@ -3,7 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../services/api';
 
-type Bubble = { from: 'bot' | 'you'; text?: string; image?: string; at: Date };
+type Bubble = {
+  from: 'bot' | 'you';
+  text?: string;
+  image?: string;
+  product?: any;
+  showActions?: boolean;
+  at: Date;
+};
 
 @Component({
   selector: 'cb-chatbot',
@@ -18,6 +25,7 @@ export class ChatbotWidgetComponent {
   @Input({ alias: 'launcher-text' }) launcherText = 'Chat';
   @Input({ alias: 'welcome' }) welcome = 'Hi! How can I help you today?';
   @ViewChild('chatBody') private chatBody!: ElementRef;
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   private apiService = inject(ApiService);
 
@@ -55,23 +63,22 @@ export class ChatbotWidgetComponent {
           image: base64,
           at: new Date(),
         });
-        // send to API
-        this.apiService.sendImage(base64);
 
-        // this.apiService.sendImage(base64).subscribe({
-        //   next: (response) => {
-        //     console.log(response);
-        //     this.messages.push({
-        //       from: 'bot',
-        //       image: response.image, //image:
-        //       at: new Date(),
-        //     });
-        //     this.scrollToBottom();
-        //   },
-        //   error: (error) => {
-        //     console.error('API Error:', error);
-        //   },
-        // });
+        this.apiService.sendImage(base64).subscribe({
+          next: (response) => {
+            console.log(response);
+            this.messages.push({
+              from: 'bot',
+              product: response,
+              showActions: true,
+              at: new Date(),
+            });
+            this.scrollToBottom();
+          },
+          error: (error) => {
+            console.error('API Error:', error);
+          },
+        });
 
         this.scrollToBottom();
       };
@@ -79,16 +86,74 @@ export class ChatbotWidgetComponent {
     }
   }
 
+  //open chat window
   openChat() {
     this.open = true;
     this.scrollToBottom();
   }
 
+  // set scroll to bottom
   private scrollToBottom(): void {
     setTimeout(() => {
       if (this.chatBody) {
         this.chatBody.nativeElement.scrollTop = this.chatBody.nativeElement.scrollHeight;
       }
     }, 0);
+  }
+
+  // add image using button
+  addProductFromImage() {
+    this.fileInput.nativeElement.click();
+  }
+
+  // accept product
+  acceptProduct(messageIndex: number) {
+    this.messages[messageIndex].showActions = false;
+    this.messages.push({
+      from: 'bot',
+      text: 'Product accepted! You can now click "Add Product" to proceed.',
+      at: new Date(),
+    });
+    this.scrollToBottom();
+  }
+
+  // cancel product
+  cancelProduct() {
+    this.messages = [{ from: 'bot', text: this.welcome, at: new Date() }];
+    this.scrollToBottom();
+  }
+
+  addProduct() {
+    alert('Product added successfully!');
+  }
+
+  // format keys to readable
+  formatKey(key: string): string {
+    return key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  }
+
+  // get all fields from product
+  getAllFields(product: any): Array<{ key: string; value: any }> {
+    const fields: Array<{ key: string; value: any }> = [];
+
+    // process main fields
+    Object.keys(product).forEach((key) => {
+      if (key === 'specifications') {
+        // process specifications separately
+        Object.keys(product.specifications).forEach((specKey) => {
+          fields.push({
+            key: this.formatKey(specKey),
+            value: product.specifications[specKey],
+          });
+        });
+      } else {
+        fields.push({
+          key: this.formatKey(key),
+          value: product[key],
+        });
+      }
+    });
+
+    return fields;
   }
 }
